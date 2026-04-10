@@ -1,0 +1,24 @@
+<div class="hero">
+  <h1>Welcome to Transport WEB</h1>
+  <p>Connect shippers with carriers through our bidding platform</p>
+  <% if (!user) { %>
+    <a href="/auth/register" class="btn btn-primary">Get Started</a>
+  <% } else { %>
+    <a href="/loads/current" class="btn btn-primary">View Loads</a>
+  <% } %>
+</div>
+
+<div class="features">
+  <div class="feature">
+    <h3>Upload Loads</h3>
+    <p>Post your transportation needs and get competitive bids</p>
+  </div>
+  <div class="feature">
+    <h3>Competitive Bidding</h3>
+    <p>Carriers bid on your loads with time-limited auctions</p>
+  </div>
+  <div class="feature">
+    <h3>User Profiles</h3>
+    <p>Build trust with verified profiles and track records</p>
+  </div>
+</div>

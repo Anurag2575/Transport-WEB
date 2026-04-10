@@ -1,0 +1,128 @@
+<div class="profile-header">
+  <% if (profileUser.photo) { %>
+    <img src="/images/<%= profileUser.photo %>" alt="Profile Photo" class="profile-photo">
+  <% } else { %>
+    <div class="profile-photo-placeholder">No Photo</div>
+  <% } %>
+  <div class="profile-info">
+    <h2><%= profileUser.username %></h2>
+    <% if (profileUser.firstName || profileUser.lastName) { %>
+      <p><%= [profileUser.firstName, profileUser.lastName].filter(Boolean).join(' ') %></p>
+    <% } %>
+    <p><strong>Mobile:</strong> <%= profileUser.mobile || 'Not provided' %></p>
+    <p><strong>Address:</strong> <%= profileUser.address || 'Not provided' %></p>
+    <p><strong>Member since:</strong> <%= profileUser.joinDate.toLocaleDateString() %></p>
+<p><strong>Status:</strong> <span class="badge <%= profileUser.isVerified ? 'verified' : 'unverified' %>"><%= profileUser.isVerified ? 'Verified' : 'Not Verified' %></span></p>
+  </div>
+  <% if (user && user._id.toString() === profileUser._id.toString()) { %>
+    <a href="/users/<%= profileUser._id %>/edit" class="btn btn-primary">Edit Profile</a>
+  <% } %>
+</div>
+
+<% if (user && user._id.toString() === profileUser._id.toString()) { %>
+  <!-- Dashboard Section for Own Profile -->
+  <div class="dashboard-sections">
+    <div class="dashboard-section">
+      <h3>Quick Actions</h3>
+      <div class="quick-actions">
+        <a href="/loads/upload" class="btn btn-primary">Upload New Load</a>
+        <a href="/loads/current" class="btn btn-secondary">Browse Loads</a>
+        <a href="/loads/search" class="btn btn-secondary">Search Loads</a>
+      </div>
+    </div>
+
+    <div class="dashboard-section">
+      <h3>My Activity</h3>
+      <div class="activity-stats">
+        <div class="stat-item">
+          <span class="stat-number"><%= profileUser.loadsPosted.length %></span>
+          <span class="stat-label">Loads Posted</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number"><%= profileUser.loadsDelivered.length %></span>
+          <span class="stat-label">Loads Delivered</span>
+        </div>
+        <div class="stat-item">
+          <span class="stat-number"><%= profileUser.complaints.length %></span>
+          <span class="stat-label">Complaints</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="dashboard-section">
+      <h3>My Bids</h3>
+      <a href="/bids/my-bids" class="btn btn-secondary">View All My Bids</a>
+      <p>Track your bidding history and current auctions</p>
+    </div>
+  </div>
+<% } else { %>
+  <!-- Stats Section for Other Users -->
+  <div class="profile-stats">
+    <div class="stat">
+      <h3><%= profileUser.loadsPosted.length %></h3>
+      <p>Loads Posted</p>
+    </div>
+    <div class="stat">
+      <h3><%= profileUser.loadsDelivered.length %></h3>
+      <p>Loads Delivered</p>
+    </div>
+    <div class="stat">
+      <h3><%= profileUser.complaints.length %></h3>
+      <p>Complaints</p>
+    </div>
+  </div>
+<% } %>
+
+<div class="profile-sections">
+  <div class="profile-section">
+    <h3>Loads Posted</h3>
+    <% if (profileUser.loadsPosted.length === 0) { %>
+      <p>No loads posted yet.</p>
+    <% } else { %>
+      <div class="loads-list">
+        <% profileUser.loadsPosted.forEach(load => { %>
+          <div class="load-item">
+            <h4><a href="/loads/<%= load._id %>"><%= load.title %></a></h4>
+            <p><strong>Route:</strong> <%= load.origin %> → <%= load.destination %></p>
+            <p><strong>Status:</strong> <span class="status-<%= load.status.replace('_', '-') %>"><%= load.status.replace('_', ' ') %></span></p>
+            <% if (load.status === 'open' && load.biddingEndTime) { %>
+              <p><strong>Bidding ends:</strong> <%= load.biddingEndTime.toLocaleString() %></p>
+            <% } %>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <div class="profile-section">
+    <h3>Loads Delivered</h3>
+    <% if (profileUser.loadsDelivered.length === 0) { %>
+      <p>No loads delivered yet.</p>
+    <% } else { %>
+      <div class="loads-list">
+        <% profileUser.loadsDelivered.forEach(load => { %>
+          <div class="load-item">
+            <h4><a href="/loads/<%= load._id %>"><%= load.title %></a></h4>
+            <p><strong>Route:</strong> <%= load.origin %> → <%= load.destination %></p>
+          </div>
+        <% }); %>
+      </div>
+    <% } %>
+  </div>
+
+  <% if (profileUser.complaints.length > 0) { %>
+    <div class="profile-section">
+      <h3>Complaints</h3>
+      <div class="complaints-list">
+        <% profileUser.complaints.forEach(complaint => { %>
+          <div class="complaint-item">
+            <h4><%= complaint.title %></h4>
+            <p><%= complaint.description %></p>
+            <p><strong>Status:</strong> <%= complaint.status %></p>
+            <p><strong>Date:</strong> <%= complaint.createdAt.toLocaleDateString() %></p>
+          </div>
+        <% }); %>
+      </div>
+    </div>
+  <% } %>
+</div>

@@ -1,0 +1,52 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Transport WEB</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <header>
+    <nav>
+      <div class="nav-container">
+        <a href="/" class="logo">Transport WEB</a>
+        <ul class="nav-menu">
+          <li><a href="/loads/current">Current Loads</a></li>
+          <li><a href="/loads/search">Search</a></li>
+          <% if (user) { %>
+            <li><a href="/loads/my-loads">My Loads</a></li>
+            <li><a href="/loads/upload">Upload Load</a></li>
+            <li><a href="/bids/my-bids">My Bids</a></li>
+            <li><a href="/users/<%= user._id %>">Profile</a></li>
+            <li><a href="/auth/logout">Logout</a></li>
+          <% } else { %>
+            <li><a href="/auth/login">Login</a></li>
+            <li><a href="/auth/register">Register</a></li>
+          <% } %>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <% if (typeof success_msg !== 'undefined' && success_msg.length > 0) { %>
+      <div class="alert alert-success"><%= success_msg %></div>
+    <% } %>
+    <% if (typeof error_msg !== 'undefined' && error_msg.length > 0) { %>
+      <div class="alert alert-error"><%= error_msg %></div>
+    <% } %>
+    <% if (typeof error !== 'undefined' && error.length > 0) { %>
+      <div class="alert alert-error"><%= error %></div>
+    <% } %>
+
+    <%- body %>
+  </main>
+
+  <footer>
+    <p>&copy; 2024 Transport WEB. All rights reserved.</p>
+  </footer>
+
+  <script src="/js/script.js"></script>
+</body>
+</html>

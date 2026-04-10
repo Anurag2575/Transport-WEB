@@ -1,0 +1,17 @@
+<h2>Current Loads</h2>
+<% if (loads.length === 0) { %>
+  <p>No loads available at the moment.</p>
+<% } else { %>
+  <div class="loads-grid">
+    <% loads.forEach(load => { %>
+      <div class="load-card">
+        <h3><%= load.title %></h3>
+        <p><strong>From:</strong> <%= load.origin %></p>
+        <p><strong>To:</strong> <%= load.destination %></p>
+        <p><strong>Posted by:</strong> <%= load.postedBy.username %></p>
+        <p><strong>Bidding ends:</strong> <%= load.biddingEndTime.toLocaleString() %></p>
+        <a href="/loads/<%= load._id %>" class="btn btn-secondary">View Details</a>
+      </div>
+    <% }); %>
+  </div>
+<% } %>

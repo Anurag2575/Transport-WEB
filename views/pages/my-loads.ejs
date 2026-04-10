@@ -1,0 +1,32 @@
+<h2>My Posted Loads</h2>
+
+<% if (!user || user.loadsPosted.length === 0) { %>
+  <p>No loads posted yet.</p>
+<% } else { %>
+  <div class="loads-grid">
+    <% user.loadsPosted.forEach(load => { %>
+      <div class="load-card">
+        <h3><%= load.title %></h3>
+        <p><strong>Route:</strong> <%= load.origin %> → <%= load.destination %></p>
+        <p><strong>Status:</strong> <span class="status-<%= load.status %>"><%= load.status %></span></p>
+        <p><strong>Bids:</strong> <%= load.bids ? load.bids.length : 0 %></p>
+        <% if (load.winner) { %>
+          <p><strong>Winner:</strong> <%= load.winner.username %></p>
+        <% } else if (load.status === 'bidding_closed') { %>
+          <p><strong>Winner:</strong> Pending manual selection</p>
+        <% } %>
+        <p><strong>Posted:</strong> <%= load.createdAt.toLocaleDateString() %></p>
+        <a href="/loads/<%= load._id %>" class="btn btn-secondary">View Details</a>
+        <% if (load.status === 'open') { %>
+          <form action="/loads/<%= load._id %>/close-no-winner" method="POST" style="display: inline;">
+            <button type="submit" class="btn btn-danger" onclick="return confirm('Close without selecting winner?')">Close without Winner</button>
+          </form>
+        <% } else if (load.status === 'bidding_closed' && !load.winner) { %>
+          <p><strong>Next step:</strong> Open details to choose a winner manually.</p>
+        <% } %>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
+
+<a href="/loads/upload" class="btn btn-primary">Post New Load</a>

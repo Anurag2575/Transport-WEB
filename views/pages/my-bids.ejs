@@ -1,0 +1,18 @@
+<h2>My Bids</h2>
+
+<% if (bids.length === 0) { %>
+  <p>You haven't placed any bids yet.</p>
+<% } else { %>
+  <div class="bids-list">
+    <% bids.forEach(bid => { %>
+      <div class="bid-card">
+        <h3><%= bid.load.title %></h3>
+        <p><strong>From:</strong> <%= bid.load.origin %> <strong>To:</strong> <%= bid.load.destination %></p>
+        <p><strong>Your Bid:</strong> $<%= bid.amount %></p>
+        <p><strong>Status:</strong> <%= bid.status %></p>
+        <p><strong>Bidding ended:</strong> <%= bid.load.biddingEndTime.toLocaleString() %></p>
+        <a href="/loads/<%= bid.load._id %>" class="btn btn-secondary">View Load</a>
+      </div>
+    <% }); %>
+  </div>
+<% } %>
