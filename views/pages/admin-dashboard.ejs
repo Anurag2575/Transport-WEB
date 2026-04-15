@@ -1,0 +1,144 @@
+<div class="container">
+  <div class="page-header">
+    <h1>Admin Dashboard - User Management</h1>
+    <p>Total Users: <%= users.length %></p>
+    <a href="/dashboard" class="btn btn-secondary">Back to Profile</a>
+  </div>
+
+<% if (typeof success_msg !== 'undefined' && success_msg.length > 0) { %>
+  <div class="alert alert-success"><%= success_msg[0] %></div>
+<% } %>
+
+<% if (typeof error_msg !== 'undefined' && error_msg.length > 0) { %>
+  <div class="alert alert-danger"><%= error_msg[0] %></div>
+<% } %>
+
+  <div class="table-responsive">
+    <table class="table table-striped admin-users-table">
+      <thead>
+        <tr>
+          <th>Photo</th>
+          <th>Username</th>
+          <th>Email</th>
+          <th>Name</th>
+          <th>Status</th>
+          <th>Admin</th>
+          <th>Joined</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody>
+        <% users.forEach(user => { %>
+          <tr data-user-id="<%= user._id %>">
+            <td>
+              <% if (user.photo) { %>
+                <img src="/images/<%= user.photo %>" alt="Photo" class="admin-user-photo">
+              <% } else { %>
+                <div class="user-photo-placeholder">👤</div>
+              <% } %>
+            </td>
+            <td><strong><%= user.username %></strong></td>
+            <td><%= user.email %></td>
+            <td><%= [user.firstName, user.lastName].filter(Boolean).join(' ') || 'N/A' %></td>
+            <td>
+              <span class="badge <%= user.isVerified ? 'verified' : 'unverified' %>">
+                <%= user.isVerified ? 'Verified' : 'Not Verified' %>
+              </span>
+            </td>
+            <td>
+              <span class="badge <%= user.isAdmin ? 'admin' : 'user' %>">
+                <%= user.isAdmin ? 'Admin' : 'User' %>
+              </span>
+            </td>
+            <td><%= user.joinDate.toLocaleDateString() %></td>
+            <td>
+              <% if (!user.isVerified) { %>
+                <button class="btn btn-primary btn-sm verify-btn" data-user-id="<%= user._id %>">
+                  Verify User
+                </button>
+              <% } else { %>
+                <span class="text-success">✅ Verified</span>
+              <% } %>
+            </td>
+          </tr>
+        <% }); %>
+      </tbody>
+    </table>
+  </div>
+</div>
+
+<script>
+  document.addEventListener('DOMContentLoaded', function() {
+    // Verify user AJAX
+    document.querySelectorAll('.verify-btn').forEach(btn => {
+      btn.addEventListener('click', async function() {
+        const userId = this.dataset.userId;
+        const btn = this;
+        btn.disabled = true;
+        btn.textContent = 'Verifying...';
+
+        try {
+          const response = await fetch(`/users/admin/users/${userId}/verify`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' }
+          });
+          const data = await response.json();
+
+          if (data.success) {
+            // Update UI
+            const row = btn.closest('tr');
+            const statusCell = row.querySelector('.badge.verified');
+            if (statusCell) {
+              statusCell.textContent = 'Verified';
+              statusCell.className = 'badge verified';
+            }
+            row.querySelector('.verify-btn')?.remove();
+            row.cells[7].innerHTML = '<span class=\"text-success\">✅ Verified</span>';
+            // Show success
+            const successDiv = document.createElement('div');
+            successDiv.className = 'alert alert-success';
+            successDiv.textContent = 'User verified successfully!';
+            document.querySelector('.page-header').after(successDiv);
+            setTimeout(() => successDiv.remove(), 3000);
+          } else {
+            throw new Error(data.error || 'Unknown error');
+          }
+        } catch (err) {
+          alert('Error: ' + err.message);
+          btn.disabled = false;
+          btn.textContent = 'Verify User';
+        }
+      });
+    });
+  });
+</script>
+
+<style>
+  .admin-users-table {
+    min-width: 800px;
+  }
+  .admin-user-photo, .user-photo-placeholder {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    object-fit: cover;
+    background: #f0f0f0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+  }
+  .badge {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 0.8em;
+    font-weight: bold;
+  }
+  .badge.verified { background: #28a745; color: white; }
+  .badge.unverified { background: #ffc107; color: black; }
+  .badge.admin { background: #dc3545; color: white; }
+  .badge.user { background: #6c757d; color: white; }
+  .page-header {
+    margin-bottom: 2rem;
+  }
+</style>

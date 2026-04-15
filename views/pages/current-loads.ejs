@@ -4,13 +4,12 @@
 <% } else { %>
   <div class="loads-grid">
     <% loads.forEach(load => { %>
-      <div class="load-card">
-        <h3><%= load.title %></h3>
-        <p><strong>From:</strong> <%= load.origin %></p>
-        <p><strong>To:</strong> <%= load.destination %></p>
-        <p><strong>Posted by:</strong> <%= load.postedBy.username %></p>
-        <p><strong>Bidding ends:</strong> <%= load.biddingEndTime.toLocaleString() %></p>
-        <a href="/loads/<%= load._id %>" class="btn btn-secondary">View Details</a>
+<div class="load-card glass-card">
+        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚚 <%= load.title %></div>
+        <p><strong>📍 From:</strong> <%= load.origin %> → <%= load.destination %></p>
+        <p><strong>👤 Posted by:</strong> <%= load.postedBy.username %></p>
+        <p><strong>⏰ Bidding ends:</strong> <%= load.biddingEndTime.toLocaleString() %></p>
+        <a href="/loads/<%= load._id %>" class="btn btn-primary">View Details & Bid</a>
       </div>
     <% }); %>
   </div>

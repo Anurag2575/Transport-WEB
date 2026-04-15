@@ -1,24 +1,29 @@
-<div class="hero">
-  <h1>Welcome to Transport WEB</h1>
-  <p>Connect shippers with carriers through our bidding platform</p>
+<div class="hero container">
+  <h1>Welcome to Transport WEB 🚚</h1>
+  <p>Connect shippers with carriers through our smart bidding platform</p>
   <% if (!user) { %>
-    <a href="/auth/register" class="btn btn-primary">Get Started</a>
+    <a href="/auth/register" class="btn btn-primary">Get Started Free</a>
+    <a href="/auth/login" class="btn btn-secondary">Login</a>
   <% } else { %>
-    <a href="/loads/current" class="btn btn-primary">View Loads</a>
+    <a href="/loads/current" class="btn btn-primary">Browse Loads</a>
+    <a href="/loads/upload" class="btn btn-secondary">Post Load</a>
   <% } %>
 </div>
 
-<div class="features">
-  <div class="feature">
+<div class="features container">
+  <div class="feature glass-card">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">📦</div>
     <h3>Upload Loads</h3>
-    <p>Post your transportation needs and get competitive bids</p>
+    <p>Post your transportation needs and receive competitive bids from verified carriers</p>
   </div>
-  <div class="feature">
+  <div class="feature glass-card">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">⚡</div>
     <h3>Competitive Bidding</h3>
-    <p>Carriers bid on your loads with time-limited auctions</p>
+    <p>Real-time auctions with time-limited bids for the best rates</p>
   </div>
-  <div class="feature">
-    <h3>User Profiles</h3>
-    <p>Build trust with verified profiles and track records</p>
+  <div class="feature glass-card">
+    <div style="font-size: 3rem; margin-bottom: 1rem;">👥</div>
+    <h3>Verified Profiles</h3>
+    <p>Build trust with complete profiles, ratings, and delivery history</p>
   </div>
 </div>

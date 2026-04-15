@@ -58,8 +58,12 @@
     <% } else { %>
       <% load.bids.forEach(bid => { %>
         <div class="bid-item">
-          <p><strong>Bidder:</strong> <%= bid.bidder.username %></p>
+          <p><strong>Bidder:</strong> <a href="/users/<%= bid.bidder._id %>"><%= bid.bidder.username %></a></p>
           <p><strong>Amount:</strong> $<%= bid.amount %></p>
+          <p><strong>Complaints:</strong> <%= (bid.bidderComplaintsCount || bid.bidder.complaintsCount || 0) %></p>
+          <% if (bid.hasComplaint) { %>
+            <span class="badge bg-danger complaint-filed">Complaint Filed</span>
+          <% } %>
           <p><strong>Message:</strong> <%= bid.message || 'No message' %></p>
           <p><strong>Status:</strong> <%= bid.status %></p>
           <% if (['open', 'bidding_closed'].includes(load.status) && user && user._id.toString() === load.postedBy._id.toString() && !load.winner) { %>

@@ -8,8 +8,49 @@
       <div class="load-card">
         <h3><%= load.title %></h3>
         <p><strong>Route:</strong> <%= load.origin %> → <%= load.destination %></p>
-        <p><strong>Status:</strong> <span class="status-<%= load.status %>"><%= load.status %></span></p>
+        <p><strong>Load Status:</strong> <span class="status-<%= load.status.replace('_', '-') %>"><%= load.status.replace('_', ' ') %></span></p>
         <p><strong>Bids:</strong> <%= load.bids ? load.bids.length : 0 %></p>
+        <% if (load.bids && load.bids.length > 0) { %>
+          <% const wonBid = load.bids.find(b => b.status === 'won'); %>
+<% if (wonBid) { %>
+            <p><strong>Winner:</strong> <%= wonBid.bidder.username %> ($<%= wonBid.amount %>)</p>
+            <% if (wonBid.hasComplaint) { %>
+              <span class="badge bg-danger complaint-filed">Complaint Filed</span>
+            <% } else { %>
+              <button type="button" class="btn btn-warning btn-small" data-bs-toggle="modal" data-bs-target="#complaintModal<%= load._id %>">File Complaint</button>
+              
+              <!-- Complaint Modal -->
+              <div class="modal fade" id="complaintModal<%= load._id %>" tabindex="-1">
+                <div class="modal-dialog">
+                  <div class="modal-content">
+                    <div class="modal-header">
+                      <h5 class="modal-title">File Complaint Against <%= wonBid.bidder.username %></h5>
+                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    </div>
+                    <form action="/loads/<%= load._id %>/complaint" method="POST">
+                      <div class="modal-body">
+                        <input type="hidden" name="loadId" value="<%= load._id %>">
+                        <input type="hidden" name="bidderId" value="<%= wonBid.bidder._id %>">
+                        <div class="mb-3">
+                          <label for="title<%= load._id %>" class="form-label">Title</label>
+                          <input type="text" class="form-control" id="title<%= load._id %>" name="title" required minlength="5">
+                        </div>
+                        <div class="mb-3">
+                          <label for="desc<%= load._id %>" class="form-label">Description</label>
+                          <textarea class="form-control" id="desc<%= load._id %>" name="description" rows="4" required minlength="10"></textarea>
+                        </div>
+                      </div>
+                      <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                        <button type="submit" class="btn btn-danger">File Complaint</button>
+                      </div>
+                    </form>
+                  </div>
+                </div>
+              </div>
+            <% } %>
+          <% } %>
+        <% } %>
         <% if (load.winner) { %>
           <p><strong>Winner:</strong> <%= load.winner.username %></p>
         <% } else if (load.status === 'bidding_closed') { %>

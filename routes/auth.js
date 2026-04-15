@@ -11,7 +11,7 @@ router.get('/register', (req, res) => {
 
 // Register handle
 router.post('/register', async (req, res) => {
-  const { username, email, password, password2, firstName, lastName, mobile } = req.body;
+  const { username, email, password, password2, firstName, lastName, mobile, userRole } = req.body;
   let errors = [];
 
   if (!username || !email || !password || !password2) {
@@ -55,7 +55,8 @@ router.post('/register', async (req, res) => {
           password,
           firstName,
           lastName,
-          mobile
+          mobile,
+          isAdmin: req.body.userRole === 'admin'
         });
 
         const salt = await bcrypt.genSalt(10);

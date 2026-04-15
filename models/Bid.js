@@ -18,13 +18,18 @@ const bidSchema = new mongoose.Schema({
   message: String,
   status: {
     type: String,
-    enum: ['active', 'won', 'lost'],
-    default: 'active'
+    enum: ['pending', 'active', 'won', 'loading', 'in-progress', 'in-transit', 'on-halt', 'unloading', 'completed', 'cancelled', 'halted'],
+    default: 'pending'
   },
   createdAt: {
     type: Date,
     default: Date.now
+  },
+  hasComplaint: {
+    type: Boolean,
+    default: false
   }
 });
 
 module.exports = mongoose.model('Bid', bidSchema);
+

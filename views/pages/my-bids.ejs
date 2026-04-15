@@ -1,18 +1,43 @@
 <h2>My Bids</h2>
+<div class="container">
+  <% if (bids.length === 0) { %>
+    <p>You haven't placed any bids yet.</p>
+  <% } else { %>
+    <div class="bids-list">
+      <% bids.forEach(bid => { %>
+        <div class="bid-card">
+          <h3><%= bid.load.title %></h3>
+          <p><strong>From:</strong> <%= bid.load.origin %> <strong>To:</strong> <%= bid.load.destination %></p>
+          <p><strong>Your Bid:</strong> $<%= bid.amount %></p>
+          <p id="status-<%= bid._id %>"><strong>Status:</strong> <span class="status-<%= bid.status.replace('_', '-') %>"><%= bid.status.replace('_', ' ') %></span></p>
+          <% 
+            var editableStatuses = ['pending', 'loading', 'in-transit', 'on-halt', 'unloading', 'completed'];
+            var formatStatusLabel = function(status) {
+              return status.replace(/_/g, ' ').replace(/\\\\b\\\\w/g, function(l) { return l.toUpperCase(); });
+            };
+          %>
+<% if (bid.status === 'won') { %>
+            <div class="status-change">
+              <select id="status-select-<%= bid._id %>" class="status-select">
+                <% editableStatuses.forEach(function(stat) { %>
+                  <option value="<%= stat %>" <%= bid.status === stat ? 'selected' : '' %>><%= formatStatusLabel(stat) %></option>
+                <% }); %>
+              </select>
+              <button onclick="updateBidStatus('<%= bid._id %>', document.getElementById('status-select-<%= bid._id %>').value)" class="btn btn-small btn-primary status-btn-small">
+                Change Status
+              </button>
+            </div>
+          <% } else { %>
+            <span class="status-label">Status not editable</span>
+          <% } %>
 
-<% if (bids.length === 0) { %>
-  <p>You haven't placed any bids yet.</p>
-<% } else { %>
-  <div class="bids-list">
-    <% bids.forEach(bid => { %>
-      <div class="bid-card">
-        <h3><%= bid.load.title %></h3>
-        <p><strong>From:</strong> <%= bid.load.origin %> <strong>To:</strong> <%= bid.load.destination %></p>
-        <p><strong>Your Bid:</strong> $<%= bid.amount %></p>
-        <p><strong>Status:</strong> <%= bid.status %></p>
-        <p><strong>Bidding ended:</strong> <%= bid.load.biddingEndTime.toLocaleString() %></p>
-        <a href="/loads/<%= bid.load._id %>" class="btn btn-secondary">View Load</a>
-      </div>
-    <% }); %>
-  </div>
-<% } %>
+          <p><strong>Bidding ended:</strong> <%= bid.load.biddingEndTime.toLocaleString() %></p>
+          <a href="/loads/<%= bid.load._id %>" class="btn btn-secondary">View Load</a>
+        </div>
+      <% }); %>
+    </div>
+    
+    </script>
+  <% } %>
+
+</div>

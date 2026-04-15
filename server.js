@@ -15,7 +15,10 @@ const app = express();
 mongoose.connect(process.env.MONGODB_URI || 'mongodb://localhost/transport-web', {
   useNewUrlParser: true,
   useUnifiedTopology: true
-}).then(() => console.log('✅ Connected to MongoDB'))
+}).then(() => {
+  console.log('✅ Connected to MongoDB');
+  require('./models');
+})
   .catch(err => console.log(err));
 
 // EJS setup

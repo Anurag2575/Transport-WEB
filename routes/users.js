@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { ensureAuthenticated } = require('../middleware/auth');
+const { ensureAuthenticated, ensureAdmin } = require('../middleware/auth');
 const User = require('../models/User');
 const multer = require('multer');
 const path = require('path');
@@ -74,6 +74,36 @@ router.put('/:id', ensureAuthenticated, upload.single('photo'), async (req, res)
     console.error(err);
     req.flash('error_msg', 'Error updating profile');
     res.redirect('/users/' + req.params.id + '/edit');
+  }
+});
+
+// Admin dashboard - list all users
+router.get('/admin/dashboard', ensureAdmin, async (req, res) => {
+  try {
+    const users = await User.find({})
+      .select('username email firstName lastName photo isVerified isAdmin joinDate')
+      .sort({ joinDate: -1 });
+    res.render('pages/admin-dashboard', { users });
+  } catch (err) {
+    console.error(err);
+    req.flash('error_msg', 'Error loading admin dashboard');
+    res.redirect('/dashboard');
+  }
+});
+
+// Admin verify user
+router.post('/admin/users/:id/verify', ensureAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+    user.isVerified = true;
+    await user.save();
+    res.json({ success: true, isVerified: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
   }
 });
 

@@ -1,18 +1,18 @@
-<div class="profile-header">
+<div class="profile-header container glass-card">
   <% if (profileUser.photo) { %>
     <img src="/images/<%= profileUser.photo %>" alt="Profile Photo" class="profile-photo">
   <% } else { %>
-    <div class="profile-photo-placeholder">No Photo</div>
+    <div class="profile-photo-placeholder">👤</div>
   <% } %>
   <div class="profile-info">
     <h2><%= profileUser.username %></h2>
     <% if (profileUser.firstName || profileUser.lastName) { %>
       <p><%= [profileUser.firstName, profileUser.lastName].filter(Boolean).join(' ') %></p>
     <% } %>
-    <p><strong>Mobile:</strong> <%= profileUser.mobile || 'Not provided' %></p>
-    <p><strong>Address:</strong> <%= profileUser.address || 'Not provided' %></p>
-    <p><strong>Member since:</strong> <%= profileUser.joinDate.toLocaleDateString() %></p>
-<p><strong>Status:</strong> <span class="badge <%= profileUser.isVerified ? 'verified' : 'unverified' %>"><%= profileUser.isVerified ? 'Verified' : 'Not Verified' %></span></p>
+    <p><strong>📱 Mobile:</strong> <%= profileUser.mobile || 'Not provided' %></p>
+    <p><strong>📍 Address:</strong> <%= profileUser.address || 'Not provided' %></p>
+    <p><strong>📅 Member since:</strong> <%= profileUser.joinDate.toLocaleDateString() %></p>
+    <p><strong>✅ Status:</strong> <span class="badge <%= profileUser.isVerified ? 'verified' : 'unverified' %>"><%= profileUser.isVerified ? 'Verified' : 'Not Verified' %></span></p>
   </div>
   <% if (user && user._id.toString() === profileUser._id.toString()) { %>
     <a href="/users/<%= profileUser._id %>/edit" class="btn btn-primary">Edit Profile</a>
