@@ -2,14 +2,21 @@ const express = require('express');
 const router = express.Router();
 const { ensureAuthenticated, ensureAdmin } = require('../middleware/auth');
 const User = require('../models/User');
+const Complaint = require('../models/Complaint');
 const multer = require('multer');
+const fs = require('fs');
 const path = require('path');
 const { closeExpiredLoads } = require('../utils/bidding');
 
 // Multer config for photo upload
+const imageUploadDir = path.join(__dirname, '..', 'public', 'images');
+if (!fs.existsSync(imageUploadDir)) {
+  fs.mkdirSync(imageUploadDir, { recursive: true });
+}
+
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'public/images/');
+    cb(null, imageUploadDir);
   },
   filename: (req, file, cb) => {
     cb(null, req.user._id + path.extname(file.originalname));
@@ -81,13 +88,65 @@ router.put('/:id', ensureAuthenticated, upload.single('photo'), async (req, res)
 router.get('/admin/dashboard', ensureAdmin, async (req, res) => {
   try {
     const users = await User.find({})
-      .select('username email firstName lastName photo isVerified isAdmin joinDate')
+      .select('username email firstName lastName photo isVerified isActive isAdmin joinDate complaints')
       .sort({ joinDate: -1 });
     res.render('pages/admin-dashboard', { users });
   } catch (err) {
     console.error(err);
     req.flash('error_msg', 'Error loading admin dashboard');
     res.redirect('/dashboard');
+  }
+});
+
+// Admin complaints page
+router.get('/admin/complaints', ensureAdmin, async (req, res) => {
+  try {
+    const selectedUserId = req.query.userId;
+    const users = await User.find({})
+      .select('username email photo')
+      .sort({ username: 1 });
+
+    const allComplaints = await Complaint.find({})
+      .select('title description status createdAt load complainant accused')
+      .populate([
+        { path: 'load', select: 'title' },
+        { path: 'complainant', select: 'username' },
+        { path: 'accused', select: 'username' }
+      ])
+      .sort({ createdAt: -1 });
+
+    const complaintUsers = users.map((user) => {
+      const userId = user._id.toString();
+      return {
+        ...user.toObject(),
+        filedByUser: allComplaints.filter(
+          (complaint) => complaint.complainant && complaint.complainant._id.toString() === userId
+        ),
+        filedAgainstUser: allComplaints.filter(
+          (complaint) => complaint.accused && complaint.accused._id.toString() === userId
+        )
+      };
+    });
+
+    const visibleComplaintUsers = selectedUserId
+      ? complaintUsers.filter((user) => user._id.toString() === selectedUserId)
+      : complaintUsers;
+
+    const selectedUser = selectedUserId
+      ? complaintUsers.find((user) => user._id.toString() === selectedUserId) || null
+      : null;
+
+    res.render('pages/admin-complaints', {
+      complaintUsers: visibleComplaintUsers,
+      totalComplaints: selectedUser
+        ? (selectedUser.filedByUser.length + selectedUser.filedAgainstUser.length)
+        : allComplaints.length,
+      selectedUser
+    });
+  } catch (err) {
+    console.error(err);
+    req.flash('error_msg', 'Error loading complaints');
+    res.redirect('/users/admin/dashboard');
   }
 });
 
@@ -101,6 +160,32 @@ router.post('/admin/users/:id/verify', ensureAdmin, async (req, res) => {
     user.isVerified = true;
     await user.save();
     res.json({ success: true, isVerified: true });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ error: 'Server error' });
+  }
+});
+
+// Admin activate/deactivate user
+router.post('/admin/users/:id/toggle-active', ensureAdmin, async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) {
+      return res.status(404).json({ error: 'User not found' });
+    }
+
+    if (user._id.toString() === req.user._id.toString()) {
+      return res.status(400).json({ error: 'You cannot deactivate your own account' });
+    }
+
+    const requestedState = req.body && typeof req.body.isActive === 'boolean'
+      ? req.body.isActive
+      : user.isActive === false;
+
+    user.isActive = requestedState;
+    await user.save();
+
+    res.json({ success: true, isActive: user.isActive });
   } catch (err) {
     console.error(err);
     res.status(500).json({ error: 'Server error' });

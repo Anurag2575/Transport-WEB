@@ -12,6 +12,10 @@ passport.use(
         console.log('User not found');
         return done(null, false, { message: 'That email is not registered' });
       }
+      if (user.isActive === false) {
+        console.log('User account deactivated');
+        return done(null, false, { message: 'Your account has been deactivated. Please contact an admin.' });
+      }
       console.log('User found, checking password');
 
       const isMatch = await bcrypt.compare(password, user.password);
@@ -45,12 +49,22 @@ passport.deserializeUser(async (id, done) => {
 module.exports = {
   ensureAuthenticated: (req, res, next) => {
     if (req.isAuthenticated()) {
+      if (req.user && req.user.isActive === false) {
+        req.logout(() => {});
+        req.flash('error_msg', 'Your account has been deactivated. Please contact an admin.');
+        return res.redirect('/auth/login');
+      }
       return next();
     }
     req.flash('error_msg', 'Please log in to view this resource');
     res.redirect('/auth/login');
   },
   ensureAdmin: (req, res, next) => {
+    if (req.isAuthenticated() && req.user && req.user.isActive === false) {
+      req.logout(() => {});
+      req.flash('error_msg', 'Your account has been deactivated. Please contact an admin.');
+      return res.redirect('/auth/login');
+    }
     if (req.isAuthenticated() && req.user.isAdmin) {
       return next();
     }

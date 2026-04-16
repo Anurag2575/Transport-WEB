@@ -1,43 +1,81 @@
-<h2>My Bids</h2>
-<div class="container">
-  <% if (bids.length === 0) { %>
-    <p>You haven't placed any bids yet.</p>
-  <% } else { %>
-    <div class="bids-list">
-      <% bids.forEach(bid => { %>
-        <div class="bid-card">
-          <h3><%= bid.load.title %></h3>
-          <p><strong>From:</strong> <%= bid.load.origin %> <strong>To:</strong> <%= bid.load.destination %></p>
-          <p><strong>Your Bid:</strong> $<%= bid.amount %></p>
-          <p id="status-<%= bid._id %>"><strong>Status:</strong> <span class="status-<%= bid.status.replace('_', '-') %>"><%= bid.status.replace('_', ' ') %></span></p>
-          <% 
-            var editableStatuses = ['pending', 'loading', 'in-transit', 'on-halt', 'unloading', 'completed'];
-            var formatStatusLabel = function(status) {
-              return status.replace(/_/g, ' ').replace(/\\\\b\\\\w/g, function(l) { return l.toUpperCase(); });
-            };
-          %>
-<% if (bid.status === 'won') { %>
-            <div class="status-change">
-              <select id="status-select-<%= bid._id %>" class="status-select">
-                <% editableStatuses.forEach(function(stat) { %>
-                  <option value="<%= stat %>" <%= bid.status === stat ? 'selected' : '' %>><%= formatStatusLabel(stat) %></option>
-                <% }); %>
-              </select>
-              <button onclick="updateBidStatus('<%= bid._id %>', document.getElementById('status-select-<%= bid._id %>').value)" class="btn btn-small btn-primary status-btn-small">
-                Change Status
-              </button>
-            </div>
-          <% } else { %>
-            <span class="status-label">Status not editable</span>
-          <% } %>
+<%
+  const editableBidCount = bids.filter(bid => bid.status === 'won').length;
+  const activeBidCount = bids.filter(bid => ['pending', 'active', 'won', 'loading', 'in-progress', 'in-transit', 'on-halt', 'unloading'].includes(bid.status)).length;
+%>
 
-          <p><strong>Bidding ended:</strong> <%= bid.load.biddingEndTime.toLocaleString() %></p>
-          <a href="/loads/<%= bid.load._id %>" class="btn btn-secondary">View Load</a>
-        </div>
-      <% }); %>
+<div class="my-bids-page container">
+  <section class="bids-overview">
+    <div class="bids-overview-copy">
+      <span class="section-kicker">Carrier Workspace</span>
+      <h1>My Bids</h1>
+      <p>Review every load you have priced, monitor delivery progress, and update winning bids as the shipment moves forward.</p>
     </div>
-    
-    </script>
-  <% } %>
+    <div class="bids-overview-stats">
+      <div class="hero-stat-card">
+        <span class="hero-stat-number"><%= bids.length %></span>
+        <span class="hero-stat-label">Total Bids</span>
+      </div>
+      <div class="hero-stat-card">
+        <span class="hero-stat-number"><%= activeBidCount %></span>
+        <span class="hero-stat-label">Active Pipeline</span>
+      </div>
+      <div class="hero-stat-card">
+        <span class="hero-stat-number"><%= editableBidCount %></span>
+        <span class="hero-stat-label">Ready for Updates</span>
+      </div>
+    </div>
+  </section>
 
+  <% if (bids.length === 0) { %>
+    <section class="profile-panel bids-empty-state">
+      <div class="section-heading">
+        <span class="section-kicker">No Bids Yet</span>
+        <h2>Your bidding history is empty</h2>
+        <p>Browse open loads to submit your first quote and start building your delivery pipeline.</p>
+      </div>
+      <a href="/loads/current" class="btn btn-primary">Browse Loads</a>
+    </section>
+  <% } else { %>
+    <section class="bids-list business-bids-list">
+      <% bids.forEach(bid => { %>
+        <article class="bid-card business-bid-card">
+          <div class="business-bid-top">
+            <div class="business-bid-heading">
+              <span class="section-kicker">Bid placed for load</span>
+              <h2><%= bid.load.title %></h2>
+            </div>
+            <span class="load-status-chip status-<%= bid.status.replace('_', '-') %>"><%= bid.status.replace('_', ' ') %></span>
+          </div>
+
+          <div class="my-load-route bid-route-card">
+            <div class="route-stop">
+              <span class="route-label">Origin</span>
+              <strong><%= bid.load.origin %></strong>
+            </div>
+            <div class="route-arrow">to</div>
+            <div class="route-stop">
+              <span class="route-label">Destination</span>
+              <strong><%= bid.load.destination %></strong>
+            </div>
+          </div>
+
+          <div class="business-bid-metrics">
+            <div class="detail-metric-card">
+              <span class="metric-label">Your bid</span>
+              <strong>$<%= bid.amount %></strong>
+            </div>
+            <div class="detail-metric-card">
+              <span class="metric-label">Placed on</span>
+              <strong><%= bid.createdAt.toLocaleDateString() %></strong>
+            </div>
+          </div>
+
+          <div class="business-bid-actions">
+            <a href="/bids/<%= bid._id %>" class="btn btn-primary">View Bid</a>
+            <a href="/loads/<%= bid.load._id %>" class="btn btn-secondary">View Load</a>
+          </div>
+        </article>
+      <% }); %>
+    </section>
+  <% } %>
 </div>

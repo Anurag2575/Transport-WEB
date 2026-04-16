@@ -7,6 +7,7 @@ const User = require('../models/User');
 const Bid = require('../models/Bid');
 const Complaint = require('../models/Complaint');
 const { closeExpiredLoads, syncExpiredLoad } = require('../utils/bidding');
+const winnerBidStatuses = ['won', 'loading', 'in-progress', 'in-transit', 'on-halt', 'unloading', 'completed', 'cancelled', 'halted'];
 
 // Upload load page
 router.get('/upload', ensureAuthenticated, (req, res) => {
@@ -66,7 +67,7 @@ router.get('/my-loads', ensureAuthenticated, async (req, res) => {
         { path: 'winner', select: 'username' },
         { 
           path: 'bids', 
-          match: { status: { $in: ['won', 'in-progress', 'completed'] } },
+          match: { status: { $in: winnerBidStatuses } },
           populate: { 
             path: 'bidder', 
             select: 'username' 
@@ -74,12 +75,27 @@ router.get('/my-loads', ensureAuthenticated, async (req, res) => {
           options: { limit: 1, sort: { status: 1 } }
         }
       ]
-    }).populate({
-      path: 'loadsPosted.bids',
-      match: { status: 'won' },
-      options: { limit: 1 }
     });
-    res.render('pages/my-loads', { user });
+
+    if (!user) {
+      req.flash('error_msg', 'User not found');
+      return res.redirect('/dashboard');
+    }
+
+    const loadIds = user.loadsPosted.map(load => load._id);
+    const complaints = await Complaint.find({
+      complainant: req.user._id,
+      load: { $in: loadIds }
+    })
+      .sort({ createdAt: -1 })
+      .lean();
+
+    const complaintsByLoad = complaints.reduce((acc, complaint) => {
+      acc[complaint.load.toString()] = complaint;
+      return acc;
+    }, {});
+
+    res.render('pages/my-loads', { user, complaintsByLoad });
   } catch (err) {
     console.error(err);
     req.flash('error_msg', 'Error loading your loads');
@@ -108,20 +124,59 @@ router.get('/search', async (req, res) => {
 router.get('/:id', async (req, res) => {
   try {
     const load = await Load.findById(req.params.id)
-      .populate('postedBy', 'username firstName lastName')
-      .populate({
+      .populate('postedBy', 'username firstName lastName');
+    if (!load) {
+      req.flash('error_msg', 'Load not found');
+      return res.redirect('/loads/current');
+    }
+
+    const ownerViewing = req.user && load.postedBy && load.postedBy._id.toString() === req.user._id.toString();
+    if (ownerViewing) {
+      await load.populate({
         path: 'bids',
-        populate: [
-          { path: 'bidder', select: 'username' },
-          { path: 'bidder.complaints', options: { countOnly: true }, as: 'bidderComplaintsCount' }
-        ]
+        populate: { path: 'bidder', select: 'username mobile address isVerified' }
       });
+
+      const bidderIds = load.bids
+        .map((bid) => bid.bidder && bid.bidder._id)
+        .filter(Boolean);
+
+      if (bidderIds.length > 0) {
+        const complaintCounts = await Complaint.aggregate([
+          { $match: { accused: { $in: bidderIds } } },
+          { $group: { _id: '$accused', count: { $sum: 1 } } }
+        ]);
+
+        const complaintCountMap = complaintCounts.reduce((acc, entry) => {
+          acc[entry._id.toString()] = entry.count;
+          return acc;
+        }, {});
+
+        load.bids.forEach((bid) => {
+          if (bid.bidder && bid.bidder._id) {
+            bid.bidderComplaintsCount = complaintCountMap[bid.bidder._id.toString()] || 0;
+          }
+        });
+      }
+    } else {
+      load.bids = [];
+    }
+
     await syncExpiredLoad(load);
     if (!load) {
       req.flash('error_msg', 'Load not found');
       return res.redirect('/loads/current');
     }
-    res.render('pages/load-details', { load });
+
+    let complaint = null;
+    if (ownerViewing) {
+      complaint = await Complaint.findOne({
+        complainant: req.user._id,
+        load: load._id
+      }).sort({ createdAt: -1 });
+    }
+
+    res.render('pages/load-details', { load, complaint });
   } catch (err) {
     console.error(err);
     res.status(500).send('Server error');
@@ -141,7 +196,7 @@ router.post('/:id/complaint', ensureAuthenticated, async (req, res) => {
     
     const load = await Load.findById(loadId).populate({
       path: 'bids',
-      match: { status: 'won' },
+      match: { status: { $in: winnerBidStatuses } },
       populate: { path: 'bidder' },
       options: { limit: 1 }
     }).populate('postedBy');
@@ -151,19 +206,37 @@ router.post('/:id/complaint', ensureAuthenticated, async (req, res) => {
       return res.redirect('/loads/my-loads');
     }
     
-    const wonBid = load.bids[0];
-    if (!wonBid) {
+    const winnerBid = load.bids.find(bid => {
+      if (!load.winner) {
+        return bid.status === 'won';
+      }
+
+      return bid.bidder && bid.bidder._id.toString() === load.winner.toString();
+    }) || load.bids[0];
+
+    if (!winnerBid) {
       req.flash('error_msg', 'No winner selected for this load');
+      return res.redirect('/loads/my-loads');
+    }
+
+    const existingComplaint = await Complaint.findOne({
+      complainant: req.user._id,
+      accused: winnerBid.bidder._id,
+      load: load._id
+    });
+
+    if (existingComplaint || winnerBid.hasComplaint) {
+      req.flash('error_msg', 'A complaint has already been filed for this load.');
       return res.redirect('/loads/my-loads');
     }
     
     // Set hasComplaint on won bid
-    wonBid.hasComplaint = true;
-    await wonBid.save();
+    winnerBid.hasComplaint = true;
+    await winnerBid.save();
     
     const newComplaint = new Complaint({
       complainant: req.user._id,
-      accused: wonBid.bidder._id,
+      accused: winnerBid.bidder._id,
       load: load._id,
       title: title.trim(),
       description: description.trim()
@@ -172,7 +245,7 @@ router.post('/:id/complaint', ensureAuthenticated, async (req, res) => {
     await newComplaint.save();
     
     // Add complaint to accused bidder's profile
-    await User.findByIdAndUpdate(wonBid.bidder._id, { $push: { complaints: newComplaint._id } });
+    await User.findByIdAndUpdate(winnerBid.bidder._id, { $push: { complaints: newComplaint._id } });
     
     req.flash('success_msg', 'Complaint filed successfully and sent for review.');
     res.redirect('/loads/my-loads');

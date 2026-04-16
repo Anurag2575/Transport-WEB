@@ -64,6 +64,30 @@ router.get('/my-bids', ensureAuthenticated, async (req, res) => {
   }
 });
 
+// Bid details
+router.get('/:bidId', ensureAuthenticated, async (req, res) => {
+  try {
+    const bid = await Bid.findById(req.params.bidId)
+      .populate('load')
+      .populate('bidder', 'username');
+
+    if (!bid || bid.bidder._id.toString() !== req.user._id.toString()) {
+      req.flash('error_msg', 'Bid not found');
+      return res.redirect('/bids/my-bids');
+    }
+
+    if (bid.load) {
+      await syncExpiredLoad(bid.load);
+    }
+
+    res.render('pages/bid-details', { bid });
+  } catch (err) {
+    console.error(err);
+    req.flash('error_msg', 'Error loading bid details');
+    res.redirect('/bids/my-bids');
+  }
+});
+
 // Update bid status
 router.put('/my-bids/:bidId/status', ensureAuthenticated, async (req, res) => {
   try {

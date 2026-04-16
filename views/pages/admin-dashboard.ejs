@@ -1,81 +1,148 @@
-<div class="container">
-  <div class="page-header">
-    <h1>Admin Dashboard - User Management</h1>
-    <p>Total Users: <%= users.length %></p>
-    <a href="/dashboard" class="btn btn-secondary">Back to Profile</a>
-  </div>
+<%
+  const verifiedCount = users.filter(user => user.isVerified).length;
+  const activeCount = users.filter(user => user.isActive !== false).length;
+  const adminCount = users.filter(user => user.isAdmin).length;
+  const complaintCount = users.reduce((total, account) => total + (account.complaints ? account.complaints.length : 0), 0);
+%>
 
-<% if (typeof success_msg !== 'undefined' && success_msg.length > 0) { %>
-  <div class="alert alert-success"><%= success_msg[0] %></div>
-<% } %>
+<div class="admin-page container">
+  <section class="admin-hero glass-card">
+    <div class="admin-hero-copy">
+      <span class="section-kicker">Admin Workspace</span>
+      <h1>User Management</h1>
+      <p>Review account health, verify new members, and activate or deactivate access from one place.</p>
+    </div>
+    <div class="admin-hero-actions">
+      <a href="/users/admin/complaints" class="btn btn-primary">View Complaints</a>
+      <a href="/dashboard" class="btn btn-secondary">Back to Dashboard</a>
+    </div>
+  </section>
 
-<% if (typeof error_msg !== 'undefined' && error_msg.length > 0) { %>
-  <div class="alert alert-danger"><%= error_msg[0] %></div>
-<% } %>
+  <section class="admin-metrics">
+    <article class="hero-stat-card">
+      <span class="hero-stat-number"><%= users.length %></span>
+      <span class="hero-stat-label">Total Users</span>
+    </article>
+    <article class="hero-stat-card">
+      <span class="hero-stat-number"><%= activeCount %></span>
+      <span class="hero-stat-label">Active Accounts</span>
+    </article>
+    <article class="hero-stat-card">
+      <span class="hero-stat-number"><%= verifiedCount %></span>
+      <span class="hero-stat-label">Verified Users</span>
+    </article>
+    <article class="hero-stat-card">
+      <span class="hero-stat-number"><%= adminCount %></span>
+      <span class="hero-stat-label">Admins</span>
+    </article>
+    <article class="hero-stat-card">
+      <span class="hero-stat-number"><%= complaintCount %></span>
+      <span class="hero-stat-label">Complaints Logged</span>
+    </article>
+  </section>
 
-  <div class="table-responsive">
-    <table class="table table-striped admin-users-table">
-      <thead>
-        <tr>
-          <th>Photo</th>
-          <th>Username</th>
-          <th>Email</th>
-          <th>Name</th>
-          <th>Status</th>
-          <th>Admin</th>
-          <th>Joined</th>
-          <th>Actions</th>
-        </tr>
-      </thead>
-      <tbody>
-        <% users.forEach(user => { %>
-          <tr data-user-id="<%= user._id %>">
-            <td>
-              <% if (user.photo) { %>
-                <img src="/images/<%= user.photo %>" alt="Photo" class="admin-user-photo">
+  <section class="profile-panel admin-panel">
+    <div class="section-heading">
+      <span class="section-kicker">Accounts</span>
+      <h2>Manage users</h2>
+      <p>Use the actions on each card to approve identities or control whether the account can sign in.</p>
+    </div>
+
+    <div class="admin-users-grid">
+      <% users.forEach(account => { %>
+        <% const complaintCountForUser = account.complaints ? account.complaints.length : 0; %>
+        <article class="admin-user-card" data-user-id="<%= account._id %>">
+          <div class="admin-user-top">
+            <div class="admin-user-profile">
+              <% if (account.photo) { %>
+                <img src="/images/<%= account.photo %>" alt="<%= account.username %>" class="admin-user-photo">
               <% } else { %>
-                <div class="user-photo-placeholder">👤</div>
+                <div class="user-photo-placeholder"><%= (account.username || 'U').charAt(0).toUpperCase() %></div>
               <% } %>
-            </td>
-            <td><strong><%= user.username %></strong></td>
-            <td><%= user.email %></td>
-            <td><%= [user.firstName, user.lastName].filter(Boolean).join(' ') || 'N/A' %></td>
-            <td>
-              <span class="badge <%= user.isVerified ? 'verified' : 'unverified' %>">
-                <%= user.isVerified ? 'Verified' : 'Not Verified' %>
+
+              <div class="admin-user-copy">
+                <h3><%= account.username %></h3>
+                <p><%= [account.firstName, account.lastName].filter(Boolean).join(' ') || 'No name provided' %></p>
+                <span class="admin-user-email"><%= account.email %></span>
+              </div>
+            </div>
+
+            <div class="admin-user-badges">
+              <span class="badge <%= account.isVerified ? 'verified' : 'unverified' %> admin-verify-badge">
+                <%= account.isVerified ? 'Verified' : 'Unverified' %>
               </span>
-            </td>
-            <td>
-              <span class="badge <%= user.isAdmin ? 'admin' : 'user' %>">
-                <%= user.isAdmin ? 'Admin' : 'User' %>
+              <span class="badge <%= account.isActive !== false ? 'active' : 'inactive' %> admin-active-badge">
+                <%= account.isActive !== false ? 'Active' : 'Deactivated' %>
               </span>
-            </td>
-            <td><%= user.joinDate.toLocaleDateString() %></td>
-            <td>
-              <% if (!user.isVerified) { %>
-                <button class="btn btn-primary btn-sm verify-btn" data-user-id="<%= user._id %>">
-                  Verify User
-                </button>
-              <% } else { %>
-                <span class="text-success">✅ Verified</span>
-              <% } %>
-            </td>
-          </tr>
-        <% }); %>
-      </tbody>
-    </table>
-  </div>
+              <span class="badge <%= account.isAdmin ? 'admin' : 'user' %>">
+                <%= account.isAdmin ? 'Admin' : 'User' %>
+              </span>
+            </div>
+          </div>
+
+          <div class="admin-user-meta">
+            <div class="detail-metric-card">
+              <span class="metric-label">Joined</span>
+              <strong><%= account.joinDate.toLocaleDateString() %></strong>
+            </div>
+            <div class="detail-metric-card">
+              <span class="metric-label">Account access</span>
+              <strong class="admin-access-value"><%= account.isActive !== false ? 'Can log in' : 'Login blocked' %></strong>
+            </div>
+            <div class="detail-metric-card">
+              <span class="metric-label">Complaints</span>
+              <strong><%= complaintCountForUser %></strong>
+            </div>
+          </div>
+
+          <div class="admin-user-actions">
+            <% if (!account.isVerified) { %>
+              <button class="btn btn-primary verify-btn" data-user-id="<%= account._id %>">Verify User</button>
+            <% } else { %>
+              <span class="admin-action-note">This user is already verified.</span>
+            <% } %>
+
+            <% if (user && user._id.toString() === account._id.toString()) { %>
+              <span class="admin-action-note">Your own account cannot be deactivated.</span>
+            <% } else { %>
+              <button
+                class="btn <%= account.isActive !== false ? 'btn-danger' : 'btn-success' %> toggle-active-btn"
+                data-user-id="<%= account._id %>"
+                data-is-active="<%= account.isActive !== false ? 'true' : 'false' %>"
+              >
+                <%= account.isActive !== false ? 'Deactivate Account' : 'Activate Account' %>
+              </button>
+            <% } %>
+            <% if (complaintCountForUser > 0) { %>
+              <a href="/users/admin/complaints?userId=<%= account._id %>" class="btn btn-secondary">Review Complaints</a>
+            <% } else { %>
+              <span class="admin-action-note">No complaints on record.</span>
+            <% } %>
+          </div>
+        </article>
+      <% }) %>
+    </div>
+  </section>
 </div>
 
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Verify user AJAX
-    document.querySelectorAll('.verify-btn').forEach(btn => {
-      btn.addEventListener('click', async function() {
-        const userId = this.dataset.userId;
-        const btn = this;
-        btn.disabled = true;
-        btn.textContent = 'Verifying...';
+  document.addEventListener('DOMContentLoaded', () => {
+    const showAlert = (message, type) => {
+      const alert = document.createElement('div');
+      alert.className = `alert ${type === 'success' ? 'alert-success' : 'alert-error'}`;
+      alert.textContent = message;
+
+      const hero = document.querySelector('.admin-hero');
+      hero.insertAdjacentElement('afterend', alert);
+
+      setTimeout(() => alert.remove(), 3500);
+    };
+
+    document.querySelectorAll('.verify-btn').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const userId = button.dataset.userId;
+        button.disabled = true;
+        button.textContent = 'Verifying...';
 
         try {
           const response = await fetch(`/users/admin/users/${userId}/verify`, {
@@ -84,61 +151,90 @@
           });
           const data = await response.json();
 
-          if (data.success) {
-            // Update UI
-            const row = btn.closest('tr');
-            const statusCell = row.querySelector('.badge.verified');
-            if (statusCell) {
-              statusCell.textContent = 'Verified';
-              statusCell.className = 'badge verified';
-            }
-            row.querySelector('.verify-btn')?.remove();
-            row.cells[7].innerHTML = '<span class=\"text-success\">✅ Verified</span>';
-            // Show success
-            const successDiv = document.createElement('div');
-            successDiv.className = 'alert alert-success';
-            successDiv.textContent = 'User verified successfully!';
-            document.querySelector('.page-header').after(successDiv);
-            setTimeout(() => successDiv.remove(), 3000);
-          } else {
-            throw new Error(data.error || 'Unknown error');
+          if (!data.success) {
+            throw new Error(data.error || 'Unable to verify user');
           }
-        } catch (err) {
-          alert('Error: ' + err.message);
-          btn.disabled = false;
-          btn.textContent = 'Verify User';
+
+          const card = button.closest('.admin-user-card');
+          const badge = card.querySelector('.admin-verify-badge');
+          badge.textContent = 'Verified';
+          badge.className = 'badge verified admin-verify-badge';
+          button.replaceWith(Object.assign(document.createElement('span'), {
+            className: 'admin-action-note',
+            textContent: 'This user is already verified.'
+          }));
+
+          showAlert('User verified successfully.', 'success');
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = 'Verify User';
+          showAlert(error.message, 'error');
+        }
+      });
+    });
+
+    document.querySelectorAll('.toggle-active-btn').forEach((button) => {
+      button.addEventListener('click', async () => {
+        const userId = button.dataset.userId;
+        const isActive = button.dataset.isActive === 'true';
+        const confirmed = confirm(
+          isActive
+            ? 'Deactivate this account? The user will no longer be able to log in.'
+            : 'Activate this account so the user can log in again?'
+        );
+
+        if (!confirmed) return;
+
+        button.disabled = true;
+        button.textContent = isActive ? 'Deactivating...' : 'Activating...';
+
+        try {
+          const response = await fetch(`/users/admin/users/${userId}/toggle-active`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ isActive: !isActive })
+          });
+
+          if (!response.ok) {
+            const text = await response.text();
+            try {
+              const data = JSON.parse(text);
+              throw new Error(data.error || 'Unable to update account');
+            } catch (parseError) {
+              throw new Error('Unable to update account');
+            }
+          }
+
+          const data = await response.json();
+
+          if (!data.success) {
+            throw new Error(data.error || 'Unable to update account');
+          }
+
+          const card = button.closest('.admin-user-card');
+          const badge = card.querySelector('.admin-active-badge');
+          const accessValue = card.querySelector('.admin-access-value');
+          const nextActive = data.isActive === true;
+
+          badge.textContent = nextActive ? 'Active' : 'Deactivated';
+          badge.className = `badge ${nextActive ? 'active' : 'inactive'} admin-active-badge`;
+          accessValue.textContent = nextActive ? 'Can log in' : 'Login blocked';
+
+          button.dataset.isActive = nextActive ? 'true' : 'false';
+          button.className = `btn ${nextActive ? 'btn-danger' : 'btn-success'} toggle-active-btn`;
+          button.textContent = nextActive ? 'Deactivate Account' : 'Activate Account';
+          button.disabled = false;
+
+          showAlert(
+            nextActive ? 'Account activated successfully.' : 'Account deactivated successfully.',
+            'success'
+          );
+        } catch (error) {
+          button.disabled = false;
+          button.textContent = isActive ? 'Deactivate Account' : 'Activate Account';
+          showAlert(error.message, 'error');
         }
       });
     });
   });
 </script>
-
-<style>
-  .admin-users-table {
-    min-width: 800px;
-  }
-  .admin-user-photo, .user-photo-placeholder {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    object-fit: cover;
-    background: #f0f0f0;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 18px;
-  }
-  .badge {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 0.8em;
-    font-weight: bold;
-  }
-  .badge.verified { background: #28a745; color: white; }
-  .badge.unverified { background: #ffc107; color: black; }
-  .badge.admin { background: #dc3545; color: white; }
-  .badge.user { background: #6c757d; color: white; }
-  .page-header {
-    margin-bottom: 2rem;
-  }
-</style>

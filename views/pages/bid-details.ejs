@@ -1,0 +1,115 @@
+<%
+  const editableStatuses = ['pending', 'loading', 'in-transit', 'on-halt', 'unloading', 'completed'];
+  const canUpdateStatus = bid.status === 'won';
+%>
+
+<div class="load-details-page container">
+  <section class="load-details-hero glass-card">
+    <div class="load-details-hero-copy">
+      <span class="section-kicker">Bid Details</span>
+      <h1><%= bid.load ? bid.load.title : 'Load unavailable' %></h1>
+      <p><%= bid.message || 'No message was added with this bid.' %></p>
+    </div>
+    <div class="load-details-hero-side">
+      <span class="load-status-chip status-<%= bid.status.replace('_', '-') %>"><%= bid.status.replace('_', ' ') %></span>
+      <div class="hero-detail-stack">
+        <div class="hero-detail-card">
+          <span class="metric-label">Your bid</span>
+          <strong>$<%= bid.amount %></strong>
+        </div>
+        <div class="hero-detail-card">
+          <span class="metric-label">Submitted</span>
+          <strong><%= bid.createdAt.toLocaleString() %></strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="load-details-layout">
+    <section class="load-info profile-panel">
+      <div class="section-heading">
+        <span class="section-kicker">Bid Summary</span>
+        <h2>Route and load snapshot</h2>
+      </div>
+
+      <% if (bid.load) { %>
+        <div class="my-load-route detail-route">
+          <div class="route-stop">
+            <span class="route-label">Origin</span>
+            <strong><%= bid.load.origin %></strong>
+          </div>
+          <div class="route-arrow">to</div>
+          <div class="route-stop">
+            <span class="route-label">Destination</span>
+            <strong><%= bid.load.destination %></strong>
+          </div>
+        </div>
+
+        <div class="detail-metrics-grid">
+          <div class="detail-metric-card">
+            <span class="metric-label">Load status</span>
+            <strong><%= bid.load.status.replace('_', ' ') %></strong>
+          </div>
+          <div class="detail-metric-card">
+            <span class="metric-label">Bidding ends</span>
+            <strong><%= bid.load.biddingEndTime ? bid.load.biddingEndTime.toLocaleString() : 'Not available' %></strong>
+          </div>
+          <div class="detail-metric-card">
+            <span class="metric-label">Description</span>
+            <strong><%= bid.load.description || 'No description provided' %></strong>
+          </div>
+          <div class="detail-metric-card">
+            <span class="metric-label">Current bid status</span>
+            <strong><%= bid.status.replace('_', ' ') %></strong>
+          </div>
+        </div>
+      <% } else { %>
+        <div class="empty-state">
+          <p>This load is no longer available, but your bid record is still shown here.</p>
+        </div>
+      <% } %>
+    </section>
+
+    <section class="profile-panel">
+      <div class="section-heading">
+        <span class="section-kicker">Actions</span>
+        <h2>Manage this bid</h2>
+        <p>Keep the list page lightweight and make status changes from here when your bid has won.</p>
+      </div>
+
+      <div id="status-<%= bid._id %>" class="bid-status-row">
+        <span class="metric-label">Status</span>
+        <span class="load-status-chip status-<%= bid.status.replace('_', '-') %>"><%= bid.status.replace('_', ' ') %></span>
+      </div>
+
+      <% if (canUpdateStatus) { %>
+        <div class="status-change business-status-change">
+          <label class="metric-label" for="status-select-<%= bid._id %>">Update shipment progress</label>
+          <div class="status-change-controls">
+            <select id="status-select-<%= bid._id %>" class="status-select">
+              <% editableStatuses.forEach(stat => { %>
+                <option value="<%= stat %>" <%= bid.status === stat ? 'selected' : '' %>><%= stat.replace(/_/g, ' ') %></option>
+              <% }) %>
+            </select>
+            <button
+              id="status-btn-<%= bid._id %>"
+              onclick="updateBidStatus('<%= bid._id %>', document.getElementById('status-select-<%= bid._id %>').value)"
+              class="btn btn-primary status-btn-small"
+            >
+              Update Status
+            </button>
+          </div>
+        </div>
+      <% } else { %>
+        <p class="status-label business-status-label">Status updates become available after your bid is selected as the winner.</p>
+      <% } %>
+
+      <div class="business-bid-actions">
+        <a href="/bids/my-bids" class="btn btn-secondary">Back to My Bids</a>
+        <% if (bid.load) { %>
+          <a href="/loads/<%= bid.load._id %>" class="btn btn-primary">View Load</a>
+        <% } %>
+      </div>
+    </section>
+  </div>
+</div>

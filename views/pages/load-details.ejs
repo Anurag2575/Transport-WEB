@@ -1,78 +1,260 @@
-<h2><%= load.title %></h2>
+<%
+  const winnerBidStatuses = ['won', 'loading', 'in-progress', 'in-transit', 'on-halt', 'unloading', 'completed', 'cancelled', 'halted'];
+  const currentComplaint = typeof complaint !== 'undefined' ? complaint : null;
+  const ownerViewing = user && user._id.toString() === load.postedBy._id.toString();
+  const winnerBid = load.bids && load.bids.length > 0
+    ? (
+        load.winner
+          ? load.bids.find(bid => bid.bidder && bid.bidder._id.toString() === load.winner._id.toString())
+          : load.bids.find(bid => winnerBidStatuses.includes(bid.status))
+      )
+    : null;
+  const canFileComplaint = Boolean(ownerViewing && winnerBid && !currentComplaint && !winnerBid.hasComplaint);
+%>
 
-<div class="load-details">
-  <div class="load-info">
-    <p><strong>Description:</strong> <%= load.description || 'No description provided' %></p>
-    <p><strong>Origin:</strong> <%= load.origin %></p>
-    <p><strong>Destination:</strong> <%= load.destination %></p>
-    <p><strong>Weight:</strong> <%= load.weight ? load.weight + ' kg' : 'Not specified' %></p>
-    <p><strong>Dimensions:</strong> <%= load.dimensions || 'Not specified' %></p>
-    <p><strong>Value:</strong> <%= load.value ? '$' + load.value : 'Not specified' %></p>
-    <p><strong>Posted by:</strong> <a href="/users/<%= load.postedBy._id %>"><%= load.postedBy.username %></a></p>
-    <p><strong>Bidding ends:</strong> <%= load.biddingEndTime.toLocaleString() %></p>
-    <p><strong>Status:</strong> <%= load.status %></p>
-    <% if (load.status === 'bidding_closed' && !load.winner) { %>
-      <p><strong>Bidding:</strong> Closed automatically. The load owner can now review bids and choose a winner manually.</p>
+<div class="load-details-page container">
+  <section class="load-details-hero glass-card">
+    <div class="load-details-hero-copy">
+      <span class="section-kicker">Load Overview</span>
+      <h1><%= load.title %></h1>
+      <p><%= load.description || 'No description provided' %></p>
+    </div>
+    <div class="load-details-hero-side">
+      <span class="load-status-chip status-<%= load.status.replace('_', '-') %>"><%= load.status.replace('_', ' ') %></span>
+      <div class="hero-detail-stack">
+        <div class="hero-detail-card">
+          <span class="metric-label">Posted by</span>
+          <strong><a href="/users/<%= load.postedBy._id %>"><%= load.postedBy.username %></a></strong>
+        </div>
+        <div class="hero-detail-card">
+          <span class="metric-label">Bidding ends</span>
+          <strong><%= load.biddingEndTime.toLocaleString() %></strong>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <div class="load-details-layout">
+    <section class="load-info profile-panel">
+      <div class="section-heading">
+        <span class="section-kicker">Shipment Details</span>
+        <h2>Route and cargo information</h2>
+      </div>
+
+      <div class="my-load-route detail-route">
+        <div class="route-stop">
+          <span class="route-label">Origin</span>
+          <strong><%= load.origin %></strong>
+        </div>
+        <div class="route-arrow">to</div>
+        <div class="route-stop">
+          <span class="route-label">Destination</span>
+          <strong><%= load.destination %></strong>
+        </div>
+      </div>
+
+      <div class="detail-metrics-grid">
+        <div class="detail-metric-card">
+          <span class="metric-label">Weight</span>
+          <strong><%= load.weight ? load.weight + ' kg' : 'Not specified' %></strong>
+        </div>
+        <div class="detail-metric-card">
+          <span class="metric-label">Dimensions</span>
+          <strong><%= load.dimensions || 'Not specified' %></strong>
+        </div>
+        <div class="detail-metric-card">
+          <span class="metric-label">Declared value</span>
+          <strong><%= load.value ? '$' + load.value : 'Not specified' %></strong>
+        </div>
+        <% if (ownerViewing) { %>
+          <div class="detail-metric-card">
+            <span class="metric-label">Bids received</span>
+            <strong><%= load.bids.length %></strong>
+          </div>
+        <% } %>
+      </div>
+
+      <% if (load.status === 'bidding_closed' && !load.winner) { %>
+        <div class="info-banner">
+          Bidding closed automatically. The load owner can now review bids and choose a winner manually.
+        </div>
+      <% } %>
+    </section>
+
+    <% if (load.status === 'open' && user && user._id.toString() !== load.postedBy._id.toString()) { %>
+      <section class="bid-section profile-panel">
+        <div class="section-heading">
+          <span class="section-kicker">Bid Now</span>
+          <h2>Place a bid</h2>
+          <p>Submit a price and a short note so the load owner can review your offer quickly.</p>
+        </div>
+
+        <form action="/bids/<%= load._id %>" method="POST">
+          <div class="form-group">
+            <label for="amount">Bid Amount ($)</label>
+            <input type="number" id="amount" name="amount" step="0.01" required>
+          </div>
+          <div class="form-group">
+            <label for="message">Message (optional)</label>
+            <textarea id="message" name="message" rows="4"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary">Place Bid</button>
+        </form>
+      </section>
     <% } %>
-  </div>
 
-  <% if (load.status === 'open' && user && user._id.toString() !== load.postedBy._id.toString()) { %>
-    <div class="bid-section">
-      <h3>Place a Bid</h3>
-      <form action="/bids/<%= load._id %>" method="POST">
-        <div class="form-group">
-          <label for="amount">Bid Amount ($)</label>
-          <input type="number" id="amount" name="amount" step="0.01" required>
+    <% if (['open', 'bidding_closed'].includes(load.status) && ownerViewing && !load.winner) { %>
+      <section class="owner-actions profile-panel">
+        <div class="section-heading">
+          <span class="section-kicker">Owner Actions</span>
+          <h2>Manage this listing</h2>
+          <p>Close bidding or review incoming offers and select the right transporter.</p>
         </div>
-        <div class="form-group">
-          <label for="message">Message (optional)</label>
-          <textarea id="message" name="message"></textarea>
-        </div>
-        <button type="submit" class="btn btn-primary">Place Bid</button>
-      </form>
-    </div>
-  <% } %>
 
-  <% if (['open', 'bidding_closed'].includes(load.status) && user && user._id.toString() === load.postedBy._id.toString() && !load.winner) { %>
-    <div class="owner-actions">
-      <h3>Owner Actions</h3>
-      <% if (load.status === 'open') { %>
-        <form action="/loads/<%= load._id %>/close-no-winner?_method=POST" method="POST" style="display: inline;">
-          <button type="submit" class="btn btn-danger" onclick="return confirm('Close without selecting winner?')">Close Bids</button>
-        </form>
-      <% } else { %>
-        <form action="/loads/<%= load._id %>/close-no-winner?_method=POST" method="POST" style="display: inline;">
-          <button type="submit" class="btn btn-danger" onclick="return confirm('Close this load without selecting any winner?')">Close Without Winner</button>
-        </form>
-      <% } %>
-      <% if (load.bids.length > 0) { %>
-        <p>Select a winner from the bids below.</p>
-      <% } %>
-    </div>
-  <% } %>
-
-  <div class="bids-list">
-    <h3>Bids (<%= load.bids.length %>)</h3>
-    <% if (load.bids.length === 0) { %>
-      <p>No bids yet.</p>
-    <% } else { %>
-      <% load.bids.forEach(bid => { %>
-        <div class="bid-item">
-          <p><strong>Bidder:</strong> <a href="/users/<%= bid.bidder._id %>"><%= bid.bidder.username %></a></p>
-          <p><strong>Amount:</strong> $<%= bid.amount %></p>
-          <p><strong>Complaints:</strong> <%= (bid.bidderComplaintsCount || bid.bidder.complaintsCount || 0) %></p>
-          <% if (bid.hasComplaint) { %>
-            <span class="badge bg-danger complaint-filed">Complaint Filed</span>
-          <% } %>
-          <p><strong>Message:</strong> <%= bid.message || 'No message' %></p>
-          <p><strong>Status:</strong> <%= bid.status %></p>
-          <% if (['open', 'bidding_closed'].includes(load.status) && user && user._id.toString() === load.postedBy._id.toString() && !load.winner) { %>
-            <form action="/loads/<%= load._id %>/select-winner/<%= bid._id %>?_method=POST" method="POST" style="display: inline;">
-              <button type="submit" class="btn btn-success btn-small" onclick="return confirm('Select <%= bid.bidder.username %> as winner?')">Select Winner</button>
+        <div class="my-load-actions">
+          <% if (load.status === 'open') { %>
+            <form action="/loads/<%= load._id %>/close-no-winner?_method=POST" method="POST" class="inline-form">
+              <button type="submit" class="btn btn-danger" onclick="return confirm('Close without selecting winner?')">Close Bids</button>
+            </form>
+          <% } else { %>
+            <form action="/loads/<%= load._id %>/close-no-winner?_method=POST" method="POST" class="inline-form">
+              <button type="submit" class="btn btn-danger" onclick="return confirm('Close this load without selecting any winner?')">Close Without Winner</button>
             </form>
           <% } %>
         </div>
-      <% }); %>
+
+        <% if (load.bids.length > 0) { %>
+          <p class="owner-note">Select a winner from the bids below.</p>
+        <% } %>
+      </section>
     <% } %>
   </div>
+
+  <% if (ownerViewing && (winnerBid || currentComplaint)) { %>
+    <section class="profile-panel">
+      <div class="section-heading">
+        <span class="section-kicker">Complaint Handling</span>
+        <h2>Winning transporter review</h2>
+        <p>Use this area to review complaint activity for the awarded transporter or file a new complaint if needed.</p>
+      </div>
+
+      <% if (winnerBid) { %>
+        <div class="winner-summary">
+          <div>
+            <span class="winner-label">Winning transporter</span>
+            <strong><%= winnerBid.bidder.username %></strong>
+          </div>
+          <div>
+            <span class="winner-label">Winning bid</span>
+            <strong>$<%= winnerBid.amount %></strong>
+          </div>
+        </div>
+      <% } %>
+
+      <% if (currentComplaint) { %>
+        <div class="complaint-summary-card">
+          <div class="load-item-top">
+            <h3><%= currentComplaint.title %></h3>
+            <span class="load-status-chip status-<%= currentComplaint.status.toLowerCase().replace(/\s+/g, '-') %>"><%= currentComplaint.status %></span>
+          </div>
+          <p><%= currentComplaint.description %></p>
+          <p class="load-detail"><strong>Filed:</strong> <%= new Date(currentComplaint.createdAt).toLocaleDateString() %></p>
+        </div>
+      <% } else if (winnerBid && winnerBid.hasComplaint) { %>
+        <div class="complaint-summary-card">
+          <div class="load-item-top">
+            <h3>Complaint filed</h3>
+            <span class="load-status-chip status-pending">pending review</span>
+          </div>
+          <p>A complaint has already been submitted for this winning transporter and is awaiting review details.</p>
+        </div>
+      <% } %>
+
+      <% if (canFileComplaint) { %>
+        <details class="complaint-panel" open>
+          <summary>File Complaint Against <%= winnerBid.bidder.username %></summary>
+          <p class="complaint-panel-copy">Use this if the winning transporter failed to deliver as agreed or caused a serious issue with the load.</p>
+          <form action="/loads/<%= load._id %>/complaint" method="POST" class="complaint-form">
+            <div class="form-group">
+              <label for="title-<%= load._id %>">Complaint Title</label>
+              <input type="text" id="title-<%= load._id %>" name="title" required minlength="5" maxlength="120" placeholder="Late delivery, damaged goods, no-show...">
+            </div>
+            <div class="form-group">
+              <label for="description-<%= load._id %>">Description</label>
+              <textarea id="description-<%= load._id %>" name="description" rows="4" required minlength="10" maxlength="1000" placeholder="Describe what happened, when it happened, and why this complaint should be reviewed."></textarea>
+            </div>
+            <button type="submit" class="btn btn-danger">Submit Complaint</button>
+          </form>
+        </details>
+      <% } %>
+    </section>
+  <% } %>
+
+  <% if (ownerViewing) { %>
+    <section class="bids-section profile-panel">
+      <div class="section-heading">
+        <span class="section-kicker">Bids</span>
+        <h2>Bids (<%= load.bids.length %>)</h2>
+      </div>
+
+      <% if (load.bids.length === 0) { %>
+        <div class="empty-state">
+          <p>No bids yet.</p>
+        </div>
+      <% } else { %>
+        <div class="bids-list detail-bids-list">
+          <% load.bids.forEach(bid => { %>
+            <article class="bid-card detail-bid-card">
+              <div class="load-item-top">
+                <div class="bidder-summary">
+                  <h3><%= bid.bidder.username %></h3>
+                  <p class="bid-amount">$<%= bid.amount %></p>
+                </div>
+                <span class="load-status-chip status-<%= bid.status.replace('_', '-') %>"><%= bid.status.replace('_', ' ') %></span>
+              </div>
+
+              <div class="detail-metrics-grid bid-metrics-grid">
+                <div class="detail-metric-card">
+                  <span class="metric-label">Verification status</span>
+                  <strong><%= bid.bidder.isVerified ? 'Verified' : 'Not verified' %></strong>
+                </div>
+                <div class="detail-metric-card">
+                  <span class="metric-label">Phone number</span>
+                  <strong><%= bid.bidder.mobile || 'Not provided' %></strong>
+                </div>
+                <div class="detail-metric-card">
+                  <span class="metric-label">Address</span>
+                  <strong><%= bid.bidder.address || 'Not provided' %></strong>
+                </div>
+                <div class="detail-metric-card">
+                  <span class="metric-label">Complaints filed against bidder</span>
+                  <strong><%= (bid.bidderComplaintsCount || bid.bidder.complaintsCount || 0) %></strong>
+                </div>
+                <div class="detail-metric-card">
+                  <span class="metric-label">Bid message</span>
+                  <strong><%= bid.message || 'No message' %></strong>
+                </div>
+              </div>
+
+              <% if (bid.hasComplaint) { %>
+                <div class="complaint-summary-card">
+                  <div class="load-item-top">
+                    <h3>Complaint Filed</h3>
+                    <span class="load-status-chip status-pending">pending review</span>
+                  </div>
+                  <p>This bidder already has a complaint attached to this load.</p>
+                </div>
+              <% } %>
+
+              <% if (['open', 'bidding_closed'].includes(load.status) && ownerViewing && !load.winner) { %>
+                <form action="/loads/<%= load._id %>/select-winner/<%= bid._id %>?_method=POST" method="POST" class="inline-form">
+                  <button type="submit" class="btn btn-success btn-small" onclick="return confirm('Select <%= bid.bidder.username %> as winner?')">Select Winner</button>
+                </form>
+              <% } %>
+            </article>
+          <% }); %>
+        </div>
+      <% } %>
+    </section>
+  <% } %>
 </div>

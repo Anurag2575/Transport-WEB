@@ -1,0 +1,168 @@
+<%
+  const complaintTotal = typeof totalComplaints !== 'undefined'
+    ? totalComplaints
+    : complaintUsers.reduce((total, account) => total + ((account.filedByUser || []).length + (account.filedAgainstUser || []).length), 0);
+  const usersWithComplaints = complaintUsers.filter(account => ((account.filedByUser || []).length + (account.filedAgainstUser || []).length) > 0);
+  const reviewTarget = typeof selectedUser !== 'undefined' ? selectedUser : null;
+%>
+
+<div class="admin-page container">
+  <section class="admin-hero glass-card">
+    <div class="admin-hero-copy">
+      <span class="section-kicker">Admin Workspace</span>
+      <h1>Complaint Review</h1>
+      <p>
+        <%= reviewTarget
+          ? `Review complaint records related to ${reviewTarget.username}, separated into complaints filed by the user and complaints filed against the user.`
+          : 'Review every complaint on the platform, separated into complaints filed by each user and complaints filed against them.'
+        %>
+      </p>
+    </div>
+    <div class="admin-hero-actions">
+      <% if (reviewTarget) { %>
+        <a href="/users/admin/complaints" class="btn btn-primary">View All Complaints</a>
+      <% } %>
+      <a href="/users/admin/dashboard" class="btn btn-secondary">Back to User Management</a>
+    </div>
+  </section>
+
+  <section class="admin-metrics">
+    <article class="hero-stat-card">
+      <span class="hero-stat-number"><%= complaintTotal %></span>
+      <span class="hero-stat-label">Total Complaints</span>
+    </article>
+    <article class="hero-stat-card">
+      <span class="hero-stat-number"><%= usersWithComplaints.length %></span>
+      <span class="hero-stat-label"><%= reviewTarget ? 'Selected User' : 'Users With Complaints' %></span>
+    </article>
+  </section>
+
+  <section class="profile-panel admin-panel">
+    <div class="section-heading">
+      <span class="section-kicker">Complaints</span>
+      <h2><%= reviewTarget ? `${reviewTarget.username}'s complaint details` : 'All complaint details' %></h2>
+      <p>
+        <%= reviewTarget
+          ? 'This page is focused on the user selected from the dashboard.'
+          : 'The dashboard now keeps only complaint counts. Full complaint records are listed here.'
+        %>
+      </p>
+    </div>
+
+    <% if (complaintTotal === 0) { %>
+      <div class="empty-state">
+        <p><%= reviewTarget ? 'No complaint records were found for this user.' : 'No complaints have been filed yet.' %></p>
+      </div>
+    <% } else { %>
+      <div class="admin-complaint-groups">
+        <% complaintUsers.forEach(account => { %>
+          <% const filedByUser = account.filedByUser || []; %>
+          <% const filedAgainstUser = account.filedAgainstUser || []; %>
+          <% const userComplaintTotal = filedByUser.length + filedAgainstUser.length; %>
+          <% if (userComplaintTotal > 0) { %>
+            <section id="user-<%= account._id %>" class="admin-complaint-group">
+              <div class="admin-user-profile">
+                <% if (account.photo) { %>
+                  <img src="/images/<%= account.photo %>" alt="<%= account.username %>" class="admin-user-photo">
+                <% } else { %>
+                  <div class="user-photo-placeholder"><%= (account.username || 'U').charAt(0).toUpperCase() %></div>
+                <% } %>
+
+                <div class="admin-user-copy">
+                  <h3><%= account.username %></h3>
+                  <p><%= account.email %></p>
+                  <span class="admin-user-email"><%= userComplaintTotal %> related complaint<%= userComplaintTotal === 1 ? '' : 's' %></span>
+                </div>
+              </div>
+
+              <div class="admin-complaint-summary">
+                <div class="detail-metric-card">
+                  <span class="metric-label">Filed by user</span>
+                  <strong><%= filedByUser.length %></strong>
+                </div>
+                <div class="detail-metric-card">
+                  <span class="metric-label">Filed against user</span>
+                  <strong><%= filedAgainstUser.length %></strong>
+                </div>
+                <div class="detail-metric-card">
+                  <span class="metric-label">Total related complaints</span>
+                  <strong><%= userComplaintTotal %></strong>
+                </div>
+              </div>
+
+              <div class="admin-complaint-columns">
+                <section class="admin-complaint-section">
+                  <div class="admin-complaint-section-heading">
+                    <span class="section-kicker">Filed By User</span>
+                    <strong><%= filedByUser.length %></strong>
+                  </div>
+
+                  <% if (filedByUser.length === 0) { %>
+                    <p class="admin-action-note">This user has not filed any complaints.</p>
+                  <% } else { %>
+                    <div class="admin-complaints-list">
+                      <% filedByUser.forEach(complaint => { %>
+                        <article class="admin-complaint-item">
+                          <div class="load-item-top">
+                            <h4><%= complaint.title %></h4>
+                            <span class="load-status-chip status-<%= complaint.status.toLowerCase().replace(/\s+/g, '-') %>"><%= complaint.status %></span>
+                          </div>
+                          <p><%= complaint.description %></p>
+                          <p class="load-detail">
+                            <strong>Date:</strong> <%= new Date(complaint.createdAt).toLocaleDateString() %>
+                            <% if (complaint.load && complaint.load.title) { %>
+                              | <strong>Load:</strong> <%= complaint.load.title %>
+                            <% } %>
+                          </p>
+                          <p class="load-detail">
+                            <% if (complaint.accused && complaint.accused.username) { %>
+                              <strong>Against:</strong> <%= complaint.accused.username %>
+                            <% } %>
+                          </p>
+                        </article>
+                      <% }) %>
+                    </div>
+                  <% } %>
+                </section>
+
+                <section class="admin-complaint-section">
+                  <div class="admin-complaint-section-heading">
+                    <span class="section-kicker">Filed Against User</span>
+                    <strong><%= filedAgainstUser.length %></strong>
+                  </div>
+
+                  <% if (filedAgainstUser.length === 0) { %>
+                    <p class="admin-action-note">No complaints have been filed against this user.</p>
+                  <% } else { %>
+                    <div class="admin-complaints-list">
+                      <% filedAgainstUser.forEach(complaint => { %>
+                        <article class="admin-complaint-item">
+                          <div class="load-item-top">
+                            <h4><%= complaint.title %></h4>
+                            <span class="load-status-chip status-<%= complaint.status.toLowerCase().replace(/\s+/g, '-') %>"><%= complaint.status %></span>
+                          </div>
+                          <p><%= complaint.description %></p>
+                          <p class="load-detail">
+                            <strong>Date:</strong> <%= new Date(complaint.createdAt).toLocaleDateString() %>
+                            <% if (complaint.load && complaint.load.title) { %>
+                              | <strong>Load:</strong> <%= complaint.load.title %>
+                            <% } %>
+                          </p>
+                          <p class="load-detail">
+                            <% if (complaint.complainant && complaint.complainant.username) { %>
+                              <strong>Filed by:</strong> <%= complaint.complainant.username %>
+                            <% } %>
+                          </p>
+                        </article>
+                      <% }) %>
+                    </div>
+                  <% } %>
+                </section>
+              </div>
+            </section>
+          <% } %>
+        <% }) %>
+      </div>
+    <% } %>
+  </section>
+</div>

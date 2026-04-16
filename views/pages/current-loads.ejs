@@ -1,16 +1,24 @@
-<h2>Current Loads</h2>
+<div class="container page-heading">
+  <span class="section-kicker">Marketplace</span>
+  <h1>Current Loads</h1>
+  <p>Open transport requests available for bidding right now.</p>
+</div>
+
 <% if (loads.length === 0) { %>
-  <p>No loads available at the moment.</p>
+  <div class="container empty-state">
+    <p>No loads available at the moment.</p>
+  </div>
 <% } else { %>
-  <div class="loads-grid">
+  <div class="loads-grid container">
     <% loads.forEach(load => { %>
-<div class="load-card glass-card">
-        <div style="font-size: 2.5rem; margin-bottom: 1rem;">🚚 <%= load.title %></div>
-        <p><strong>📍 From:</strong> <%= load.origin %> → <%= load.destination %></p>
-        <p><strong>👤 Posted by:</strong> <%= load.postedBy.username %></p>
-        <p><strong>⏰ Bidding ends:</strong> <%= load.biddingEndTime.toLocaleString() %></p>
-        <a href="/loads/<%= load._id %>" class="btn btn-primary">View Details & Bid</a>
-      </div>
+      <article class="load-card glass-card current-load-card">
+        <div class="section-kicker">Open for Bids</div>
+        <h2><%= load.title %></h2>
+        <p><strong>Route:</strong> <%= load.origin %> to <%= load.destination %></p>
+        <p><strong>Posted by:</strong> <%= load.postedBy.username %></p>
+        <p><strong>Bidding ends:</strong> <%= load.biddingEndTime.toLocaleString() %></p>
+        <a href="/loads/<%= load._id %>" class="btn btn-primary">View Details</a>
+      </article>
     <% }); %>
   </div>
 <% } %>

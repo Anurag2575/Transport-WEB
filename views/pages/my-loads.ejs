@@ -1,73 +1,118 @@
-<h2>My Posted Loads</h2>
+<%
+  const loadItems = (user && user.loadsPosted) ? user.loadsPosted : [];
+  const complaintMap = typeof complaintsByLoad !== 'undefined' ? complaintsByLoad : {};
+  const openCount = loadItems.filter(load => load.status === 'open').length;
+  const assignedCount = loadItems.filter(load => ['assigned', 'delivered'].includes(load.status)).length;
+  const complaintCount = Object.keys(complaintMap).length;
+%>
 
-<% if (!user || user.loadsPosted.length === 0) { %>
-  <p>No loads posted yet.</p>
-<% } else { %>
-  <div class="loads-grid">
-    <% user.loadsPosted.forEach(load => { %>
-      <div class="load-card">
-        <h3><%= load.title %></h3>
-        <p><strong>Route:</strong> <%= load.origin %> → <%= load.destination %></p>
-        <p><strong>Load Status:</strong> <span class="status-<%= load.status.replace('_', '-') %>"><%= load.status.replace('_', ' ') %></span></p>
-        <p><strong>Bids:</strong> <%= load.bids ? load.bids.length : 0 %></p>
-        <% if (load.bids && load.bids.length > 0) { %>
-          <% const wonBid = load.bids.find(b => b.status === 'won'); %>
-<% if (wonBid) { %>
-            <p><strong>Winner:</strong> <%= wonBid.bidder.username %> ($<%= wonBid.amount %>)</p>
-            <% if (wonBid.hasComplaint) { %>
-              <span class="badge bg-danger complaint-filed">Complaint Filed</span>
-            <% } else { %>
-              <button type="button" class="btn btn-warning btn-small" data-bs-toggle="modal" data-bs-target="#complaintModal<%= load._id %>">File Complaint</button>
-              
-              <!-- Complaint Modal -->
-              <div class="modal fade" id="complaintModal<%= load._id %>" tabindex="-1">
-                <div class="modal-dialog">
-                  <div class="modal-content">
-                    <div class="modal-header">
-                      <h5 class="modal-title">File Complaint Against <%= wonBid.bidder.username %></h5>
-                      <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                    </div>
-                    <form action="/loads/<%= load._id %>/complaint" method="POST">
-                      <div class="modal-body">
-                        <input type="hidden" name="loadId" value="<%= load._id %>">
-                        <input type="hidden" name="bidderId" value="<%= wonBid.bidder._id %>">
-                        <div class="mb-3">
-                          <label for="title<%= load._id %>" class="form-label">Title</label>
-                          <input type="text" class="form-control" id="title<%= load._id %>" name="title" required minlength="5">
-                        </div>
-                        <div class="mb-3">
-                          <label for="desc<%= load._id %>" class="form-label">Description</label>
-                          <textarea class="form-control" id="desc<%= load._id %>" name="description" rows="4" required minlength="10"></textarea>
-                        </div>
-                      </div>
-                      <div class="modal-footer">
-                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-                        <button type="submit" class="btn btn-danger">File Complaint</button>
-                      </div>
-                    </form>
-                  </div>
-                </div>
-              </div>
-            <% } %>
-          <% } %>
-        <% } %>
-        <% if (load.winner) { %>
-          <p><strong>Winner:</strong> <%= load.winner.username %></p>
-        <% } else if (load.status === 'bidding_closed') { %>
-          <p><strong>Winner:</strong> Pending manual selection</p>
-        <% } %>
-        <p><strong>Posted:</strong> <%= load.createdAt.toLocaleDateString() %></p>
-        <a href="/loads/<%= load._id %>" class="btn btn-secondary">View Details</a>
-        <% if (load.status === 'open') { %>
-          <form action="/loads/<%= load._id %>/close-no-winner" method="POST" style="display: inline;">
-            <button type="submit" class="btn btn-danger" onclick="return confirm('Close without selecting winner?')">Close without Winner</button>
-          </form>
-        <% } else if (load.status === 'bidding_closed' && !load.winner) { %>
-          <p><strong>Next step:</strong> Open details to choose a winner manually.</p>
-        <% } %>
+<div class="my-loads-page container">
+  <section class="my-loads-hero glass-card">
+    <div class="my-loads-hero-copy">
+      <span class="section-kicker">Load Management</span>
+      <h1>My Loads</h1>
+      <p>Track every posted shipment, review winners, close bidding cleanly, and file complaints from one place.</p>
+    </div>
+    <div class="my-loads-hero-stats">
+      <div class="hero-stat-card">
+        <span class="hero-stat-number"><%= loadItems.length %></span>
+        <span class="hero-stat-label">Total Loads</span>
       </div>
-    <% }); %>
-  </div>
-<% } %>
+      <div class="hero-stat-card">
+        <span class="hero-stat-number"><%= openCount %></span>
+        <span class="hero-stat-label">Open Loads</span>
+      </div>
+      <div class="hero-stat-card">
+        <span class="hero-stat-number"><%= assignedCount %></span>
+        <span class="hero-stat-label">Assigned or Delivered</span>
+      </div>
+      <div class="hero-stat-card">
+        <span class="hero-stat-number"><%= complaintCount %></span>
+        <span class="hero-stat-label">Complaints Filed</span>
+      </div>
+    </div>
+  </section>
 
-<a href="/loads/upload" class="btn btn-primary">Post New Load</a>
+  <% if (loadItems.length === 0) { %>
+    <section class="profile-panel my-loads-empty">
+      <div class="section-heading">
+        <span class="section-kicker">No Loads Yet</span>
+        <h2>Your board is empty</h2>
+        <p>Post your first load to start receiving bids from transporters.</p>
+      </div>
+      <a href="/loads/upload" class="btn btn-primary">Post New Load</a>
+    </section>
+  <% } else { %>
+    <section class="my-loads-toolbar">
+      <a href="/loads/upload" class="btn btn-primary">Post New Load</a>
+      <a href="/loads/current" class="btn btn-secondary">Browse Current Loads</a>
+    </section>
+
+    <section class="my-loads-grid">
+      <% loadItems.forEach(load => { %>
+        <% 
+          const wonBid = load.bids && load.bids.length > 0 ? (
+            load.winner
+              ? load.bids.find(bid => bid.bidder && bid.bidder._id.toString() === load.winner._id.toString())
+              : load.bids[0]
+          ) : null;
+          const complaint = complaintMap[load._id.toString()];
+          const bidCount = load.bids ? load.bids.length : 0;
+          const needsWinnerSelection = load.status === 'bidding_closed' && !load.winner;
+        %>
+        <article class="load-card my-load-card profile-panel">
+          <div class="my-load-card-top">
+            <div class="my-load-card-heading">
+              <span class="section-kicker">Posted <%= load.createdAt.toLocaleDateString() %></span>
+              <h2><%= load.title %></h2>
+            </div>
+            <span class="load-status-chip status-<%= load.status.replace('_', '-') %>"><%= load.status.replace('_', ' ') %></span>
+          </div>
+
+          <div class="my-load-route">
+            <div class="route-stop">
+              <span class="route-label">Origin</span>
+              <strong><%= load.origin %></strong>
+            </div>
+            <div class="route-arrow">to</div>
+            <div class="route-stop">
+              <span class="route-label">Destination</span>
+              <strong><%= load.destination %></strong>
+            </div>
+          </div>
+
+          <div class="my-load-metrics">
+            <div class="my-load-metric">
+              <span class="metric-label">Tracked bids</span>
+              <strong><%= bidCount %></strong>
+            </div>
+            <div class="my-load-metric">
+              <span class="metric-label">Winner</span>
+              <strong><%= wonBid ? wonBid.bidder.username : (load.winner ? load.winner.username : 'Not selected') %></strong>
+            </div>
+            <div class="my-load-metric">
+              <span class="metric-label">Complaint</span>
+              <strong><%= complaint ? complaint.status : (wonBid && wonBid.hasComplaint ? 'Filed' : 'None') %></strong>
+            </div>
+          </div>
+
+          <% if (needsWinnerSelection) { %>
+            <div class="info-banner info-banner-warning">
+              Bidding is closed. Open the load details page to review bids and choose a winner.
+            </div>
+          <% } %>
+
+          <% if (complaint || (wonBid && wonBid.hasComplaint)) { %>
+            <div class="info-banner">
+              Complaint activity exists for this load. Open the details page to review it.
+            </div>
+          <% } %>
+
+          <div class="my-load-actions">
+            <a href="/loads/<%= load._id %>" class="btn btn-secondary">View Details</a>
+          </div>
+        </article>
+      <% }); %>
+    </section>
+  <% } %>
+</div>

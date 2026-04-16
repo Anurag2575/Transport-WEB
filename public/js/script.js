@@ -29,7 +29,7 @@ async function updateBidStatus(bidId, status) {
     if (data.success) {
       const statusEl = document.getElementById(`status-${bidId}`);
       const newClass = `status-${data.status.replace('_', '-')}`;
-      statusEl.innerHTML = `<strong>Status:</strong> <span class="${newClass}">${formatStatusLabel(data.status)}</span>`;
+      statusEl.innerHTML = `<span class="metric-label">Status</span><span class="load-status-chip ${newClass}">${formatStatusLabel(data.status)}</span>`;
       document.querySelector(`#status-select-${bidId}`).value = data.status;
       alert('Status updated successfully!');
     } else {
@@ -60,4 +60,3 @@ document.addEventListener('DOMContentLoaded', () => {
     initBidStatusDropdown(bidId, select.value);
   });
 });
-
